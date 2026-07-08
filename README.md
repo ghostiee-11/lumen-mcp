@@ -32,8 +32,9 @@ you reference them by **table name**. Charts and reports bind to those tables.
   PNG/HTML paths and a `ui_uri`.
 - `refine_chart(chart_id, spec_patch)` - deep-merge a patch and re-render under the same id.
 - `get_chart(chart_id)` / `list_charts()` - fetch or list rendered charts.
+- `view(target)` - show a chart (by id) or a saved `.png` inline; HTML files return a path to open.
 - `build_report(items, title, formats?)` - assemble charts + markdown into a self-contained HTML and
-  a reproducible `.ipynb`.
+  a reproducible `.ipynb`; returns inline chart previews too.
 - `save_session(path)` / `load_session(path)` - persist and restore the workspace and its charts.
 - `launch_dashboard()` / `stop_dashboard()` - serve the session's charts + tables as a live,
   interactive Lumen dashboard (a background `panel serve` process) at a localhost URL.

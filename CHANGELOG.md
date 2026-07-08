@@ -43,6 +43,8 @@ All notable changes to lumen-mcp are documented here. Format loosely based on Ke
     localhost URL, with direct DuckDB-workspace access. `launch_dashboard` also returns the charts as
     inline PNG previews (open the URL for the interactive version). Verified end-to-end (headless
     screenshot). 13 tools total.
+- `view(target)` - show a chart (by id) or a saved `.png` inline as an image; HTML/other files return
+  a path to open. `build_report` now also returns its charts as inline previews.
 - Keyed agentic mode (opt-in, requires an LLM key):
   - `lumen_ask(prompt)` runs Lumen's own Planner + SQLAgent + VegaLiteAgent headless over the
     workspace - Lumen writes and runs the SQL and builds the chart itself - returning the chart
