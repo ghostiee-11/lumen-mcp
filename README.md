@@ -13,8 +13,8 @@ either way via `_shims.py`).
 - **Keyless (default, no API key).** The host LLM you are already talking to writes the SQL and the
   Vega-Lite spec; lumen-mcp runs them through Lumen (DuckDB workspace, spec normalization,
   rendering, report export). The host is the agent.
-- **Keyed (opt-in, Phase 2).** Lumen's own `SQLAgent` / `VegaLiteAgent` / `Planner` run inside the
-  server. You just describe what you want. Requires an LLM key.
+- **Keyed (opt-in).** Lumen's own `SQLAgent` / `VegaLiteAgent` / `Planner` run inside the server.
+  You just describe what you want. Requires an LLM key (see below).
 
 Same tools, same DuckDB workspace, same chart/report output. The key just flips the brain.
 
@@ -41,6 +41,21 @@ you reference them by **table name**. Charts and reports bind to those tables.
 
 Charts are also served as `ui://lumen/chart/{id}` MCP-App resources (interactive HTML) for
 Apps-capable hosts (Claude Desktop/web).
+
+## Keyed mode (Lumen's own agents)
+
+Start the server with an LLM key in the environment and one extra tool appears:
+
+```bash
+OPENAI_API_KEY=...   lumen-mcp     # or ANTHROPIC_API_KEY=...
+```
+
+- `lumen_ask(prompt)` - Lumen's own Planner + SQLAgent + VegaLiteAgent run headless over the
+  workspace: Lumen writes and runs the SQL and builds the chart itself. Returns the chart inline plus
+  the generated SQL and a summary.
+
+Set `LUMEN_MCP_LLM_MODEL` to override the default model (`gpt-4o` / `claude-sonnet-4-5`). Without a
+key, `lumen_ask` is not registered and the server runs keyless.
 
 ## Live dashboard
 

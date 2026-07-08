@@ -46,6 +46,12 @@ All notable changes to lumen-mcp are documented here. Format loosely based on Ke
     localhost URL, with direct DuckDB-workspace access. `launch_dashboard` also returns the charts as
     inline PNG previews (open the URL for the interactive version). Verified end-to-end (headless
     screenshot). 13 tools total.
+- Keyed agentic mode (opt-in, requires an LLM key):
+  - `lumen_ask(prompt)` runs Lumen's own Planner + SQLAgent + VegaLiteAgent headless over the
+    workspace - Lumen writes and runs the SQL and builds the chart itself - returning the chart
+    inline plus the generated SQL and a summary. Registered only when `OPENAI_API_KEY` or
+    `ANTHROPIC_API_KEY` is set (13 tools keyless, 14 keyed). Runs headless with no Lumen change
+    needed (`interface=None` + source pre-set in context). Verified end-to-end with gpt-4o.
 
 ### Notes
 - Sources are loaded fully into the in-memory workspace; large on-disk sources via DuckDB `ATTACH`
