@@ -48,18 +48,19 @@ def _safe(fn):
     return wrapper
 
 
+def _tool_result(structured: dict, text: str, image_paths=()) -> ToolResult:
+    """Build a ToolResult with inline PNG previews (for paths that exist) plus a text summary."""
+    content = [Image(path=path, format="png").to_image_content()
+               for path in image_paths if path and os.path.exists(path)]
+    content.append(TextContent(type="text", text=text))
+    return ToolResult(content=content, structured_content=structured)
+
+
 def _chart_result(result: dict) -> ToolResult:
     """Wrap a render result as an inline PNG preview plus structured data."""
-    content = []
-    png_path = result.get("png_path")
-    if png_path and os.path.exists(png_path):
-        content.append(Image(path=png_path, format="png").to_image_content())
-    content.append(TextContent(
-        type="text",
-        text=(f"Rendered chart '{result['chart_id']}' on table '{result['table']}'. "
-              f"Interactive HTML saved to {result.get('html_path')}."),
-    ))
-    return ToolResult(content=content, structured_content=result)
+    text = (f"Rendered chart '{result['chart_id']}' on table '{result['table']}'. "
+            f"Interactive HTML saved to {result.get('html_path')}.")
+    return _tool_result(result, text, [result.get("png_path")])
 
 
 def render_vegalite(spec: dict, table: str, chart_id: Optional[str] = None) -> ToolResult:
@@ -94,17 +95,11 @@ def view(target: str) -> ToolResult:
         return _chart_result(viz.get_chart(target))
     if os.path.isfile(target):
         ext = os.path.splitext(target)[1].lower()
-        if ext in (".png", ".jpg", ".jpeg"):
-            fmt = "jpeg" if ext in (".jpg", ".jpeg") else "png"
-            return ToolResult(
-                content=[Image(path=target, format=fmt).to_image_content(),
-                         TextContent(type="text", text=target)],
-                structured_content={"path": target, "kind": "image"},
-            )
+        if ext == ".png":
+            return _tool_result({"path": target, "kind": "image"}, target, [target])
         note = (f"HTML at {target} - open it in a browser for the interactive view."
                 if ext in (".html", ".htm") else f"File: {target}")
-        return ToolResult(content=[TextContent(type="text", text=note)],
-                          structured_content={"path": target, "kind": ext.lstrip(".") or "file"})
+        return _tool_result({"path": target, "kind": ext.lstrip(".") or "file"}, note)
     raise ValueError(f"Unknown chart id or file path: {target!r}")
 
 
@@ -115,15 +110,11 @@ def build_report(items: list, title: str = "Report", formats: Optional[list] = N
     report's charts plus the saved file paths.
     """
     result = report.build_report(items, title=title, formats=formats)
-    content = []
-    for item in items[:8]:
-        entry = session.charts.get(item.get("chart")) if isinstance(item, dict) else None
-        if entry and entry.get("png_path") and os.path.exists(entry["png_path"]):
-            content.append(Image(path=entry["png_path"], format="png").to_image_content())
+    pngs = [session.charts.get(item["chart"], {}).get("png_path")
+            for item in items[:8] if isinstance(item, dict) and item.get("chart")]
     saved = ", ".join(f"{key.replace('_path', '')}: {value}"
                       for key, value in result.items() if key.endswith("_path"))
-    content.append(TextContent(type="text", text=f"Report '{result.get('title')}' saved. {saved}"))
-    return ToolResult(content=content, structured_content=result)
+    return _tool_result(result, f"Report '{result.get('title')}' saved. {saved}", pngs)
 
 
 def launch_dashboard() -> ToolResult:
@@ -133,19 +124,12 @@ def launch_dashboard() -> ToolResult:
     full interactive experience (filter/sort tables, pan/zoom charts); the previews are static.
     """
     result = live.launch_dashboard()
-    content = []
-    for cid in result.get("charts", [])[:4]:
-        entry = session.charts.get(cid)
-        if entry and entry.get("png_path") and os.path.exists(entry["png_path"]):
-            content.append(Image(path=entry["png_path"], format="png").to_image_content())
+    pngs = [session.charts.get(cid, {}).get("png_path") for cid in result.get("charts", [])[:4]]
     status = "ready" if result.get("ready") else "starting"
-    content.append(TextContent(
-        type="text",
-        text=(f"Live dashboard {status} at {result['url']} - open it in a browser to interact "
-              f"(filter/sort tables, pan/zoom charts). Tables: {result.get('tables')}. "
-              f"Chart previews are shown inline above."),
-    ))
-    return ToolResult(content=content, structured_content=result)
+    text = (f"Live dashboard {status} at {result['url']} - open it in a browser to interact "
+            f"(filter/sort tables, pan/zoom charts). Tables: {result.get('tables')}. "
+            f"Chart previews are shown inline above.")
+    return _tool_result(result, text, pngs)
 
 
 def lumen_ask(prompt: str) -> ToolResult:
@@ -156,10 +140,6 @@ def lumen_ask(prompt: str) -> ToolResult:
     LLM key.
     """
     result = agentic.lumen_ask(prompt)
-    content = []
-    png_path = result.get("png_path")
-    if png_path and os.path.exists(png_path):
-        content.append(Image(path=png_path, format="png").to_image_content())
     lines = []
     if result.get("sql"):
         lines.append(f"SQL:\n{result['sql']}")
@@ -167,8 +147,7 @@ def lumen_ask(prompt: str) -> ToolResult:
         lines.append(result["summary"])
     if result.get("chart_id"):
         lines.append(f"Chart: {result['chart_id']} (table {result.get('table')}).")
-    content.append(TextContent(type="text", text="\n\n".join(lines) or "Done."))
-    return ToolResult(content=content, structured_content=result)
+    return _tool_result(result, "\n\n".join(lines) or "Done.", [result.get("png_path")])
 
 
 def set_llm_key(api_key: str, provider: str = "openai", model: Optional[str] = None) -> dict:

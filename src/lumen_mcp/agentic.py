@@ -24,12 +24,11 @@ _PROVIDERS = [
 ]
 
 _llm = None
-_provider: Optional[str] = None
 
 
 def configure_llm() -> Optional[str]:
     """Configure the server-side LLM from environment keys. Returns the provider name, or None."""
-    global _llm, _provider
+    global _llm
     from lumen.ai import llm as llm_module
 
     model_override = os.environ.get("LUMEN_MCP_LLM_MODEL")
@@ -44,7 +43,6 @@ def configure_llm() -> Optional[str]:
         if cls is None:
             continue
         _llm = cls(model_kwargs={"default": {"model": model_override or default_model}}, timeout=180)
-        _provider = provider
         return provider
     return None
 
@@ -60,14 +58,6 @@ def set_key(api_key: str, provider: str = "openai", model: Optional[str] = None)
     if configure_llm() is None:
         raise RuntimeError("Failed to configure the LLM with the provided key.")
     return provider
-
-
-def is_configured() -> bool:
-    return _llm is not None
-
-
-def provider() -> Optional[str]:
-    return _provider
 
 
 async def _run(prompt: str) -> dict:

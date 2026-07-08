@@ -20,7 +20,8 @@ from lumen_mcp import agentic, sources  # noqa: E402
 
 
 def test_keyed() -> None:
-    if not agentic.configure_llm():
+    provider = agentic.configure_llm()
+    if not provider:
         print("SKIP: no LLM key configured (set OPENAI_API_KEY or ANTHROPIC_API_KEY)")
         return
 
@@ -35,7 +36,7 @@ def test_keyed() -> None:
     assert data.get("sql"), data
     images = [block for block in result.content if getattr(block, "type", None) == "image"]
 
-    print("provider:", agentic.provider())
+    print("provider:", provider)
     print("lumen_ask sql:", " ".join(data["sql"].split())[:140])
     print("table:", data.get("table"), "| chart_id:", data.get("chart_id"),
           "| png:", bool(data.get("png_path")), "| inline image:", bool(images))
