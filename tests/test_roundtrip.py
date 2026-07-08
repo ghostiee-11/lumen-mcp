@@ -24,7 +24,7 @@ from lumen_mcp.server import mcp  # noqa: E402
 
 _EXPECTED_TOOLS = {
     "connect_source", "list_tables", "describe_table", "run_sql",
-    "render_vegalite", "refine_chart", "list_charts", "build_report",
+    "render_vegalite", "refine_chart", "get_chart", "list_charts", "build_report",
 }
 
 
@@ -70,8 +70,15 @@ async def _run() -> None:
         images = [block for block in raw.content if getattr(block, "type", None) == "image"]
         assert images, "render_vegalite did not return an inline image block"
         assert chart["html_path"] and os.path.exists(chart["html_path"]), chart
+        assert chart["ui_uri"].startswith("ui://lumen/chart/"), chart
         print("render_vegalite:", {key: chart[key] for key in ("chart_id", "png_path", "html_path")},
               "| inline image:", bool(images))
+
+        got = _data(await client.call_tool("get_chart", {"chart_id": chart["chart_id"]}))
+        assert got["chart_id"] == chart["chart_id"] and got["ui_uri"] == chart["ui_uri"], got
+        templates = [str(t) for t in await client.list_resource_templates()]
+        assert any("ui://lumen/chart" in t for t in templates), templates
+        print("get_chart:", got["ui_uri"], "| ui:// resource template registered:", True)
 
         rep = _data(await client.call_tool(
             "build_report",

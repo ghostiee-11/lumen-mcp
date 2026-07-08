@@ -20,6 +20,7 @@ from fastmcp.utilities.types import Image
 from mcp.types import TextContent
 
 from . import report, sources, viz
+from .session import session
 
 mcp = FastMCP(
     "lumen-mcp",
@@ -78,6 +79,11 @@ def refine_chart(chart_id: str, spec_patch: dict) -> ToolResult:
     return _chart_result(viz.refine_chart(chart_id, spec_patch))
 
 
+def get_chart(chart_id: str) -> ToolResult:
+    """Fetch an existing chart by id: an inline PNG preview plus spec, saved paths, and ui_uri."""
+    return _chart_result(viz.get_chart(chart_id))
+
+
 # The plain-dict tools carry their own docstrings + type hints for the schema; the chart tools above
 # add an inline image.
 _TOOLS = [
@@ -87,12 +93,27 @@ _TOOLS = [
     sources.run_sql,
     render_vegalite,
     refine_chart,
+    get_chart,
     viz.list_charts,
     report.build_report,
 ]
 
 for _fn in _TOOLS:
     mcp.tool()(_safe(_fn))
+
+
+@mcp.resource(
+    "ui://lumen/chart/{chart_id}",
+    app=True,
+    mime_type="text/html",
+    name="Lumen chart viewer",
+    description="Interactive, self-contained Vega chart for a rendered chart id.",
+)
+def chart_app(chart_id: str) -> str:
+    entry = session.charts.get(chart_id)
+    if entry is None:
+        return f"<p>Unknown chart id: {chart_id}</p>"
+    return entry["html"]
 
 
 def main() -> None:

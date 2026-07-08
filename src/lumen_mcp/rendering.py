@@ -51,12 +51,13 @@ def save_png(view, chart_id: str, scale: int = 2) -> Optional[str]:
     return path
 
 
-def save_html(view, chart_id: str, title: Optional[str] = None) -> str:
-    """Save a self-contained (offline) HTML file for a single view."""
+def save_html(view, chart_id: str, title: Optional[str] = None) -> tuple[str, str]:
+    """Render a self-contained (offline) HTML page for a view; save it and return (path, html)."""
     _ensure_panel()
     buf = io.StringIO()
     pn.Column(view.get_panel()).save(buf, embed=True, title=title or chart_id)
+    html = buf.getvalue()
     path = os.path.join(_OUT_DIR, f"{chart_id}.html")
     with open(path, "w") as fh:
-        fh.write(buf.getvalue())
-    return path
+        fh.write(html)
+    return path, html
