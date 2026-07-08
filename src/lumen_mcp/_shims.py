@@ -1,9 +1,8 @@
 """Bridges to Lumen internals.
 
-lumen-mcp reuses Lumen's own code. A couple of pieces are not yet exposed as public API (see
-UPSTREAM_LUMEN.md, PRs #1/#2). This module prefers the public API when present and falls back to
-the validated private path otherwise, so the server works whether or not those PRs have landed in
-the installed Lumen.
+lumen-mcp reuses Lumen's own code. A couple of pieces are not yet exposed as public API; this module
+prefers the public API when the installed Lumen provides it and falls back to the validated private
+path otherwise, so the server works either way.
 """
 
 from __future__ import annotations
@@ -14,8 +13,8 @@ from typing import Any
 
 import yaml
 
-# --- PR #1: vega-lite spec normalization -----------------------------------------------------
-try:  # public API once PR #1 lands
+# Vega-Lite spec normalization: use the public function when the installed Lumen exposes it.
+try:
     from lumen.ai.agents.vega_lite import normalize_vegalite_spec as _public_normalize
 
     _HAVE_PUBLIC_NORMALIZE = True

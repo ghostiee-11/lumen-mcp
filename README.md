@@ -4,9 +4,8 @@ Drive [Lumen](https://github.com/holoviz/lumen)'s data to SQL to chart to report
 MCP client (Claude Code, Claude Desktop, Cursor, VS Code, Goose, ...).
 
 lumen-mcp is a standalone MCP server. It imports Lumen as a dependency and reuses Lumen's own
-engine; it does not modify Lumen. See [UPSTREAM_LUMEN.md](UPSTREAM_LUMEN.md) for the two small,
-additive, behavior-preserving Lumen changes that let the reuse be clean (the server works today
-either way via `_shims.py`).
+engine; it does not modify Lumen. A couple of not-yet-public Lumen helpers are reached via a small
+`_shims.py`, which picks up the public API automatically once the installed Lumen exposes it.
 
 ## Two modes
 
