@@ -19,7 +19,7 @@ from fastmcp.tools.tool import ToolResult
 from fastmcp.utilities.types import Image
 from mcp.types import TextContent
 
-from . import live, report, session_io, sources, viz
+from . import agentic, live, report, session_io, sources, viz
 from .session import session
 
 mcp = FastMCP(
@@ -106,6 +106,29 @@ def launch_dashboard() -> ToolResult:
     return ToolResult(content=content, structured_content=result)
 
 
+def lumen_ask(prompt: str) -> ToolResult:
+    """Answer a natural-language request by running Lumen's OWN agents (keyed mode).
+
+    Lumen writes and runs the SQL and builds the chart itself over the current workspace. Returns the
+    chart inline plus the generated SQL and a summary. Requires a connected source and a configured
+    LLM key.
+    """
+    result = agentic.lumen_ask(prompt)
+    content = []
+    png_path = result.get("png_path")
+    if png_path and os.path.exists(png_path):
+        content.append(Image(path=png_path, format="png").to_image_content())
+    lines = []
+    if result.get("sql"):
+        lines.append(f"SQL:\n{result['sql']}")
+    if result.get("summary"):
+        lines.append(result["summary"])
+    if result.get("chart_id"):
+        lines.append(f"Chart: {result['chart_id']} (table {result.get('table')}).")
+    content.append(TextContent(type="text", text="\n\n".join(lines) or "Done."))
+    return ToolResult(content=content, structured_content=result)
+
+
 # The plain-dict tools carry their own docstrings + type hints for the schema; the chart tools above
 # add an inline image.
 _TOOLS = [
@@ -126,6 +149,12 @@ _TOOLS = [
 
 for _fn in _TOOLS:
     mcp.tool()(_safe(_fn))
+
+
+# Keyed mode: register lumen_ask only when an LLM is configured (API key in the environment).
+_KEYED_PROVIDER = agentic.configure_llm()
+if _KEYED_PROVIDER:
+    mcp.tool()(_safe(lumen_ask))
 
 
 @mcp.resource(
