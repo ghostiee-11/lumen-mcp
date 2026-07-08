@@ -13,4 +13,19 @@ All notable changes to lumen-mcp are documented here. Format loosely based on Ke
 
 ### Added
 - Repo scaffold: `pyproject.toml`, package skeleton under `src/lumen_mcp/`, git init as ghostiee-11.
-- (build entries appended after the keyless slice is verified)
+- Keyless Phase 0 core loop, verified end-to-end against local Lumen 1.2.0:
+  - `session.py` - DuckDB workspace: one in-memory `DuckDBSource`; every SQL result is materialized
+    as a named table via `create_sql_expr_source(materialize=True)` and referenced by name.
+  - Tools: `connect_source`, `list_tables`, `describe_table`, `run_sql`, `render_vegalite`.
+  - `rendering.py` - PNG via vl-convert and self-contained HTML via Panel `.save(embed=True)` (no
+    server, no browser).
+  - `_shims.py` - spec normalization bridge (public `normalize_vegalite_spec` when present, else
+    `VegaLiteAgent._extract_spec`).
+  - `server.py` FastMCP wiring; `examples/make_sample_db.py`; `tests/test_slice.py` (renders a
+    correct sorted bar chart to PNG + offline HTML). ruff clean.
+
+### Notes
+- Sources are loaded fully into the in-memory workspace; large on-disk sources via DuckDB `ATTACH`
+  is a later enhancement.
+- Running `server.py` needs an environment with `fastmcp` (a lumen-mcp dependency); the tool logic
+  is verified in Lumen's environment.
