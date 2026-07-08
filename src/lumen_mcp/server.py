@@ -84,6 +84,48 @@ def get_chart(chart_id: str) -> ToolResult:
     return _chart_result(viz.get_chart(chart_id))
 
 
+def view(target: str) -> ToolResult:
+    """Show a chart or a saved file inline. ``target`` is a chart_id, or a path to a .png/.html file.
+
+    A chart_id or an image file is returned as an inline image; an HTML file is returned as a path to
+    open in a browser (rasterizing HTML to an inline image would need a headless browser).
+    """
+    if target in session.charts:
+        return _chart_result(viz.get_chart(target))
+    if os.path.isfile(target):
+        ext = os.path.splitext(target)[1].lower()
+        if ext in (".png", ".jpg", ".jpeg"):
+            fmt = "jpeg" if ext in (".jpg", ".jpeg") else "png"
+            return ToolResult(
+                content=[Image(path=target, format=fmt).to_image_content(),
+                         TextContent(type="text", text=target)],
+                structured_content={"path": target, "kind": "image"},
+            )
+        note = (f"HTML at {target} - open it in a browser for the interactive view."
+                if ext in (".html", ".htm") else f"File: {target}")
+        return ToolResult(content=[TextContent(type="text", text=note)],
+                          structured_content={"path": target, "kind": ext.lstrip(".") or "file"})
+    raise ValueError(f"Unknown chart id or file path: {target!r}")
+
+
+def build_report(items: list, title: str = "Report", formats: Optional[list] = None) -> ToolResult:
+    """Assemble charts + markdown into a downloadable HTML and .ipynb.
+
+    Each item is ``{"markdown": "..."}`` or ``{"chart": "<chart_id>"}``. Returns inline previews of the
+    report's charts plus the saved file paths.
+    """
+    result = report.build_report(items, title=title, formats=formats)
+    content = []
+    for item in items[:8]:
+        entry = session.charts.get(item.get("chart")) if isinstance(item, dict) else None
+        if entry and entry.get("png_path") and os.path.exists(entry["png_path"]):
+            content.append(Image(path=entry["png_path"], format="png").to_image_content())
+    saved = ", ".join(f"{key.replace('_path', '')}: {value}"
+                      for key, value in result.items() if key.endswith("_path"))
+    content.append(TextContent(type="text", text=f"Report '{result.get('title')}' saved. {saved}"))
+    return ToolResult(content=content, structured_content=result)
+
+
 def launch_dashboard() -> ToolResult:
     """Start a live interactive Lumen dashboard server (charts + sortable tables).
 
@@ -151,8 +193,9 @@ _TOOLS = [
     render_vegalite,
     refine_chart,
     get_chart,
+    view,
     viz.list_charts,
-    report.build_report,
+    build_report,
     session_io.save_session,
     session_io.load_session,
     launch_dashboard,

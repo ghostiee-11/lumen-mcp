@@ -24,7 +24,7 @@ from lumen_mcp.server import mcp  # noqa: E402
 
 _EXPECTED_TOOLS = {
     "connect_source", "list_tables", "describe_table", "run_sql",
-    "render_vegalite", "refine_chart", "get_chart", "list_charts", "build_report",
+    "render_vegalite", "refine_chart", "get_chart", "view", "list_charts", "build_report",
     "save_session", "load_session",
 }
 
@@ -81,12 +81,21 @@ async def _run() -> None:
         assert any("ui://lumen/chart" in t for t in templates), templates
         print("get_chart:", got["ui_uri"], "| ui:// resource template registered:", True)
 
-        rep = _data(await client.call_tool(
+        rep_raw = await client.call_tool(
             "build_report",
             {"items": [{"markdown": "# Sales"}, {"chart": chart["chart_id"]}], "title": "Sales"},
-        ))
+        )
+        rep = _data(rep_raw)
+        rep_images = [block for block in rep_raw.content if getattr(block, "type", None) == "image"]
         assert os.path.exists(rep["html_path"]) and os.path.exists(rep["ipynb_path"]), rep
-        print("build_report:", {key: rep.get(key) for key in ("html_path", "ipynb_path")})
+        assert rep_images, "build_report returned no inline preview"
+        print("build_report:", {key: rep.get(key) for key in ("html_path", "ipynb_path")},
+              "| inline previews:", len(rep_images))
+
+        view_raw = await client.call_tool("view", {"target": chart["chart_id"]})
+        view_images = [block for block in view_raw.content if getattr(block, "type", None) == "image"]
+        assert view_images, "view(chart_id) returned no inline image"
+        print("view:", "chart_id -> inline image OK")
 
         save_path = os.path.join(tempfile.mkdtemp(), "session")
         saved = _data(await client.call_tool("save_session", {"path": save_path}))
