@@ -43,7 +43,9 @@ All notable changes to lumen-mcp are documented here. Format loosely based on Ke
   - `launch_dashboard` / `stop_dashboard` run a background `panel serve` process (the
     panel-live-server subprocess pattern, embedded here) that serves the session's charts
     (interactive Vega) and workspace tables (sortable Tabulator) as a live Lumen dashboard at a
-    localhost URL, with direct DuckDB-workspace access. Verified end-to-end. 13 tools total.
+    localhost URL, with direct DuckDB-workspace access. `launch_dashboard` also returns the charts as
+    inline PNG previews (open the URL for the interactive version). Verified end-to-end (headless
+    screenshot). 13 tools total.
 
 ### Notes
 - Sources are loaded fully into the in-memory workspace; large on-disk sources via DuckDB `ATTACH`

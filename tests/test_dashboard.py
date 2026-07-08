@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "examples"))
 
 import make_sample_db  # noqa: E402
 
-from lumen_mcp import live, sources, viz  # noqa: E402
+from lumen_mcp import live, server, sources, viz  # noqa: E402
 
 
 def test_dashboard() -> None:
@@ -35,12 +35,16 @@ def test_dashboard() -> None:
     )
 
     try:
-        result = live.launch_dashboard()
-        assert result["ready"], result
-        assert "by_region" in result["tables"], result
-        with urllib.request.urlopen(result["url"], timeout=5) as response:
+        tool_result = server.launch_dashboard()
+        data = tool_result.structured_content
+        assert data["ready"], data
+        assert "by_region" in data["tables"], data
+        images = [b for b in tool_result.content if getattr(b, "type", None) == "image"]
+        assert images, "launch_dashboard returned no inline chart preview"
+        with urllib.request.urlopen(data["url"], timeout=5) as response:
             assert response.status == 200
-        print("launch_dashboard ->", {k: result[k] for k in ("url", "ready", "charts", "tables")})
+        print("launch_dashboard ->", {k: data[k] for k in ("url", "ready", "charts", "tables")},
+              "| inline previews:", len(images))
     finally:
         stopped = live.stop_dashboard()
         print("stop_dashboard   ->", stopped)

@@ -84,6 +84,28 @@ def get_chart(chart_id: str) -> ToolResult:
     return _chart_result(viz.get_chart(chart_id))
 
 
+def launch_dashboard() -> ToolResult:
+    """Start a live interactive Lumen dashboard server (charts + sortable tables).
+
+    Returns inline PNG previews of the charts plus a localhost URL. Open the URL in a browser for the
+    full interactive experience (filter/sort tables, pan/zoom charts); the previews are static.
+    """
+    result = live.launch_dashboard()
+    content = []
+    for cid in result.get("charts", [])[:4]:
+        entry = session.charts.get(cid)
+        if entry and entry.get("png_path") and os.path.exists(entry["png_path"]):
+            content.append(Image(path=entry["png_path"], format="png").to_image_content())
+    status = "ready" if result.get("ready") else "starting"
+    content.append(TextContent(
+        type="text",
+        text=(f"Live dashboard {status} at {result['url']} - open it in a browser to interact "
+              f"(filter/sort tables, pan/zoom charts). Tables: {result.get('tables')}. "
+              f"Chart previews are shown inline above."),
+    ))
+    return ToolResult(content=content, structured_content=result)
+
+
 # The plain-dict tools carry their own docstrings + type hints for the schema; the chart tools above
 # add an inline image.
 _TOOLS = [
@@ -98,7 +120,7 @@ _TOOLS = [
     report.build_report,
     session_io.save_session,
     session_io.load_session,
-    live.launch_dashboard,
+    launch_dashboard,
     live.stop_dashboard,
 ]
 
