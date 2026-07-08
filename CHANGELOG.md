@@ -23,6 +23,13 @@ All notable changes to lumen-mcp are documented here. Format loosely based on Ke
     `VegaLiteAgent._extract_spec`).
   - `server.py` FastMCP wiring; `examples/make_sample_db.py`; `tests/test_slice.py` (renders a
     correct sorted bar chart to PNG + offline HTML). ruff clean.
+- Keyless loop completed:
+  - `refine_chart` - deep-merge a spec patch into an existing chart and re-render under the same id.
+  - `list_charts` - list the rendered-chart registry.
+  - `build_report` - assemble charts + markdown into a self-contained HTML and a reproducible
+    `.ipynb`, reusing Panel `.save` and `lumen.ai.export`.
+- Live protocol verification: `tests/test_roundtrip.py` drives all eight tools through FastMCP's
+  in-memory client (fastmcp 3.4.3). Installed into a runnable env (fastmcp + lumen-mcp editable).
 
 ### Notes
 - Sources are loaded fully into the in-memory workspace; large on-disk sources via DuckDB `ATTACH`
