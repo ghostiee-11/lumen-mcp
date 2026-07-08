@@ -25,6 +25,7 @@ from lumen_mcp.server import mcp  # noqa: E402
 _EXPECTED_TOOLS = {
     "connect_source", "list_tables", "describe_table", "run_sql",
     "render_vegalite", "refine_chart", "get_chart", "list_charts", "build_report",
+    "save_session", "load_session",
 }
 
 
@@ -86,6 +87,14 @@ async def _run() -> None:
         ))
         assert os.path.exists(rep["html_path"]) and os.path.exists(rep["ipynb_path"]), rep
         print("build_report:", {key: rep.get(key) for key in ("html_path", "ipynb_path")})
+
+        save_path = os.path.join(tempfile.mkdtemp(), "session")
+        saved = _data(await client.call_tool("save_session", {"path": save_path}))
+        assert "by_region" in saved["tables"], saved
+        loaded = _data(await client.call_tool("load_session", {"path": saved["saved"]}))
+        assert "by_region" in loaded["tables"], loaded
+        assert chart["chart_id"] in loaded["charts"], loaded
+        print("save/load session:", {"tables": loaded["tables"], "charts": loaded["charts"]})
 
     print("ROUND-TRIP PASS")
 

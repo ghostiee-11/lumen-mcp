@@ -19,7 +19,7 @@ from fastmcp.tools.tool import ToolResult
 from fastmcp.utilities.types import Image
 from mcp.types import TextContent
 
-from . import report, sources, viz
+from . import report, session_io, sources, viz
 from .session import session
 
 mcp = FastMCP(
@@ -96,6 +96,8 @@ _TOOLS = [
     get_chart,
     viz.list_charts,
     report.build_report,
+    session_io.save_session,
+    session_io.load_session,
 ]
 
 for _fn in _TOOLS:
