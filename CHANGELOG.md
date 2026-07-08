@@ -52,6 +52,10 @@ All notable changes to lumen-mcp are documented here. Format loosely based on Ke
     inline plus the generated SQL and a summary. Registered only when `OPENAI_API_KEY` or
     `ANTHROPIC_API_KEY` is set (13 tools keyless, 14 keyed). Runs headless with no Lumen change
     needed (`interface=None` + source pre-set in context). Verified end-to-end with gpt-4o.
+  - Keyed mode can also be enabled at runtime via `set_llm_key(api_key, provider, model)` or the
+    in-chat `ui://lumen/setup` pane (Apps-capable hosts submit the key without routing it through the
+    model). `lumen_ask` returns a clean error until configured. `_run_coro` hardened (cancels pending
+    tasks, propagates exceptions); LLM timeout raised to 180s.
 
 ### Notes
 - Sources are loaded fully into the in-memory workspace; large on-disk sources via DuckDB `ATTACH`

@@ -54,8 +54,15 @@ OPENAI_API_KEY=...   lumen-mcp     # or ANTHROPIC_API_KEY=...
   workspace: Lumen writes and runs the SQL and builds the chart itself. Returns the chart inline plus
   the generated SQL and a summary.
 
-Set `LUMEN_MCP_LLM_MODEL` to override the default model (`gpt-4o` / `claude-sonnet-4-5`). Without a
-key, `lumen_ask` is not registered and the server runs keyless.
+Set `LUMEN_MCP_LLM_MODEL` to override the default model (`gpt-4o` / `claude-sonnet-4-5`).
+
+You can also enable keyed mode **at runtime** without restarting:
+- `set_llm_key(api_key, provider, model?)` - configure a key mid-session (it passes through the
+  conversation, so prefer the env var for anything sensitive and rotate afterward).
+- `ui://lumen/setup` - an in-chat key-entry pane on Apps-capable hosts (Claude Desktop/web) that
+  submits the key without routing it through the model.
+
+Until a key is configured, `lumen_ask` returns a clear "not configured" message.
 
 ## Live dashboard
 
