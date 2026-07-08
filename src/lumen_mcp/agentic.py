@@ -36,13 +36,30 @@ def configure_llm() -> Optional[str]:
     for provider, env_var, class_names, default_model in _PROVIDERS:
         if not os.environ.get(env_var):
             continue
-        cls = next((getattr(llm_module, name) for name in class_names if hasattr(llm_module, name)), None)
+        cls = None
+        for name in class_names:
+            cls = getattr(llm_module, name, None)
+            if cls is not None:
+                break
         if cls is None:
             continue
-        _llm = cls(model_kwargs={"default": {"model": model_override or default_model}})
+        _llm = cls(model_kwargs={"default": {"model": model_override or default_model}}, timeout=180)
         _provider = provider
         return provider
     return None
+
+
+def set_key(api_key: str, provider: str = "openai", model: Optional[str] = None) -> str:
+    """Enable keyed mode at runtime by setting a provider key, then (re)configuring the LLM."""
+    entry = next((item for item in _PROVIDERS if item[0] == provider), None)
+    if entry is None:
+        raise ValueError(f"Unknown provider {provider!r}. Use one of {[item[0] for item in _PROVIDERS]}.")
+    os.environ[entry[1]] = api_key
+    if model:
+        os.environ["LUMEN_MCP_LLM_MODEL"] = model
+    if configure_llm() is None:
+        raise RuntimeError("Failed to configure the LLM with the provided key.")
+    return provider
 
 
 def is_configured() -> bool:

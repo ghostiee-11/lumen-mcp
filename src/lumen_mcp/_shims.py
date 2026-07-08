@@ -24,20 +24,33 @@ except Exception:  # pragma: no cover - depends on installed Lumen version
 
 
 def _run_coro(coro: Any) -> Any:
-    """Run a coroutine to completion from any context (sync tool or event loop)."""
-    box: dict[str, Any] = {}
+    """Run a coroutine to completion from any context (sync tool or event loop).
+
+    Runs in a dedicated thread with its own loop, cancels any tasks the coroutine left pending (Lumen
+    spawns streaming tasks), and propagates exceptions to the caller.
+    """
+    result: dict[str, Any] = {}
 
     def runner() -> None:
         loop = asyncio.new_event_loop()
         try:
-            box["value"] = loop.run_until_complete(coro)
+            result["value"] = loop.run_until_complete(coro)
+        except BaseException as exc:  # propagate to the calling thread
+            result["error"] = exc
         finally:
+            pending = asyncio.all_tasks(loop)
+            for task in pending:
+                task.cancel()
+            if pending:
+                loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
             loop.close()
 
     thread = threading.Thread(target=runner)
     thread.start()
     thread.join()
-    return box["value"]
+    if "error" in result:
+        raise result["error"]
+    return result["value"]
 
 
 def normalize_spec(spec: dict) -> dict:

@@ -129,6 +129,18 @@ def lumen_ask(prompt: str) -> ToolResult:
     return ToolResult(content=content, structured_content=result)
 
 
+def set_llm_key(api_key: str, provider: str = "openai", model: Optional[str] = None) -> dict:
+    """Enable keyed mode at runtime by providing an LLM key, so lumen_ask can run Lumen's own agents.
+
+    Security: prefer starting the server with the key in the environment (OPENAI_API_KEY or
+    ANTHROPIC_API_KEY). Passing it through this tool sends it through the conversation, so rotate the
+    key afterward. The in-chat setup pane (ui://lumen/setup) submits it without routing through the
+    model on Apps-capable hosts.
+    """
+    resolved = agentic.set_key(api_key, provider=provider, model=model)
+    return {"keyed": True, "provider": resolved, "model": os.environ.get("LUMEN_MCP_LLM_MODEL")}
+
+
 # The plain-dict tools carry their own docstrings + type hints for the schema; the chart tools above
 # add an inline image.
 _TOOLS = [
@@ -151,10 +163,11 @@ for _fn in _TOOLS:
     mcp.tool()(_safe(_fn))
 
 
-# Keyed mode: register lumen_ask only when an LLM is configured (API key in the environment).
-_KEYED_PROVIDER = agentic.configure_llm()
-if _KEYED_PROVIDER:
-    mcp.tool()(_safe(lumen_ask))
+# Keyed mode: configure from the environment at startup, and always expose lumen_ask + set_llm_key so
+# keyed mode can also be enabled at runtime. lumen_ask returns a helpful error until a key is set.
+agentic.configure_llm()
+for _keyed_fn in (lumen_ask, set_llm_key):
+    mcp.tool()(_safe(_keyed_fn))
 
 
 @mcp.resource(
@@ -169,6 +182,21 @@ def chart_app(chart_id: str) -> str:
     if entry is None:
         return f"<p>Unknown chart id: {chart_id}</p>"
     return entry["html"]
+
+
+_APPS_DIR = os.path.join(os.path.dirname(__file__), "apps")
+
+
+@mcp.resource(
+    "ui://lumen/setup",
+    app=True,
+    mime_type="text/html",
+    name="Enable keyed mode",
+    description="Enter an LLM key to enable Lumen's own agents (keyed mode). Apps-capable hosts only.",
+)
+def setup_app() -> str:
+    with open(os.path.join(_APPS_DIR, "setup.html")) as fh:
+        return fh.read()
 
 
 def main() -> None:
