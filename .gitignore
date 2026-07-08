@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+.pixi/
+*.db
+*.duckdb
+.lumen-mcp/
+out/
+.DS_Store
+.pytest_cache/
