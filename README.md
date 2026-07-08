@@ -82,6 +82,18 @@ python examples/make_sample_db.py          # writes sample.db
 
 Then, in the client: connect to `sample.db`, run a `GROUP BY` query, and render a bar chart.
 
+## Development
+
+```bash
+pip install -e ".[dev]"          # editable install with pytest
+pytest                           # run the tests
+ruff check src tests examples
+```
+
+Tests: `test_slice` (keyless logic), `test_roundtrip` (MCP protocol), `test_dashboard` (spawns a live
+server), `test_keyed` (skips unless an LLM key is set).
+
 ## Status
 
-Phase 0 (keyless core loop) in progress. See [CHANGELOG.md](CHANGELOG.md).
+Keyless loop + delivery hardening + live dashboard + keyed agentic mode (15 tools). See
+[CHANGELOG.md](CHANGELOG.md) for details.
