@@ -65,9 +65,13 @@ async def _run() -> None:
                 "y": {"field": "total", "type": "quantitative"},
             },
         }
-        chart = _data(await client.call_tool("render_vegalite", {"spec": spec, "table": "by_region"}))
+        raw = await client.call_tool("render_vegalite", {"spec": spec, "table": "by_region"})
+        chart = _data(raw)
+        images = [block for block in raw.content if getattr(block, "type", None) == "image"]
+        assert images, "render_vegalite did not return an inline image block"
         assert chart["html_path"] and os.path.exists(chart["html_path"]), chart
-        print("render_vegalite:", {key: chart[key] for key in ("chart_id", "png_path", "html_path")})
+        print("render_vegalite:", {key: chart[key] for key in ("chart_id", "png_path", "html_path")},
+              "| inline image:", bool(images))
 
         rep = _data(await client.call_tool(
             "build_report",

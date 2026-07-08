@@ -2,13 +2,22 @@
 
 Run with ``lumen-mcp`` (stdio) after ``pip install -e .``, or register with a client, e.g.
 ``claude mcp add lumen-mcp -- lumen-mcp``.
+
+Chart tools return the rendered PNG as an inline ``Image`` (so it displays in the chat and the model
+can see it) alongside structured data (chart_id, normalized spec, saved paths). Hosts that do not
+render images inline still get the paths.
 """
 
 from __future__ import annotations
 
 import functools
+import os
+from typing import Optional
 
 from fastmcp import FastMCP
+from fastmcp.tools.tool import ToolResult
+from fastmcp.utilities.types import Image
+from mcp.types import TextContent
 
 from . import report, sources, viz
 
@@ -18,9 +27,9 @@ mcp = FastMCP(
         "Drive Lumen from any MCP client (keyless mode). You, the host LLM, write the SQL and the "
         "Vega-Lite spec; this server runs them through Lumen: a DuckDB workspace, spec "
         "normalization, rendering, and report export. Workflow: connect_source -> describe_table "
-        "-> run_sql (each result becomes a named table) -> render_vegalite(spec, table). Bind "
-        "charts to the table names returned by run_sql, and omit 'data' from the spec (the server "
-        "injects the table's data)."
+        "-> run_sql (each result becomes a named table) -> render_vegalite(spec, table) -> "
+        "refine_chart -> build_report. Bind charts to the table names returned by run_sql, and "
+        "omit 'data' from the spec (the server injects the table's data)."
     ),
 )
 
@@ -38,14 +47,46 @@ def _safe(fn):
     return wrapper
 
 
-# Keyless Phase 0 tools. The functions carry their own docstrings + type hints for the schema.
+def _chart_result(result: dict) -> ToolResult:
+    """Wrap a render result as an inline PNG preview plus structured data."""
+    content = []
+    png_path = result.get("png_path")
+    if png_path and os.path.exists(png_path):
+        content.append(Image(path=png_path, format="png").to_image_content())
+    content.append(TextContent(
+        type="text",
+        text=(f"Rendered chart '{result['chart_id']}' on table '{result['table']}'. "
+              f"Interactive HTML saved to {result.get('html_path')}."),
+    ))
+    return ToolResult(content=content, structured_content=result)
+
+
+def render_vegalite(spec: dict, table: str, chart_id: Optional[str] = None) -> ToolResult:
+    """Render a Vega-Lite spec bound to a workspace table.
+
+    Omit 'data' from the spec; the server injects the table's data. Returns an inline PNG preview
+    plus the chart_id, normalized spec, and saved PNG/HTML paths.
+    """
+    return _chart_result(viz.render_vegalite(spec, table, chart_id))
+
+
+def refine_chart(chart_id: str, spec_patch: dict) -> ToolResult:
+    """Deep-merge a spec patch into an existing chart and re-render under the same id.
+
+    Returns an inline PNG preview plus the updated structured result.
+    """
+    return _chart_result(viz.refine_chart(chart_id, spec_patch))
+
+
+# The plain-dict tools carry their own docstrings + type hints for the schema; the chart tools above
+# add an inline image.
 _TOOLS = [
     sources.connect_source,
     sources.list_tables,
     sources.describe_table,
     sources.run_sql,
-    viz.render_vegalite,
-    viz.refine_chart,
+    render_vegalite,
+    refine_chart,
     viz.list_charts,
     report.build_report,
 ]
