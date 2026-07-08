@@ -28,8 +28,17 @@ All notable changes to lumen-mcp are documented here. Format loosely based on Ke
   - `list_charts` - list the rendered-chart registry.
   - `build_report` - assemble charts + markdown into a self-contained HTML and a reproducible
     `.ipynb`, reusing Panel `.save` and `lumen.ai.export`.
-- Live protocol verification: `tests/test_roundtrip.py` drives all eight tools through FastMCP's
-  in-memory client (fastmcp 3.4.3). Installed into a runnable env (fastmcp + lumen-mcp editable).
+- Live protocol verification: `tests/test_roundtrip.py` drives the tools through FastMCP's
+  in-memory client (fastmcp 3.4.3). Installed into a runnable env (fastmcp + lumen-mcp editable) and
+  registered with Claude Code (`claude mcp add`, health check Connected).
+- Phase 1 (delivery hardening):
+  - Chart tools return the rendered PNG as an inline MCP `Image` (displays in-chat, the model can
+    see it) alongside structured data; hosts without inline images still get the saved paths.
+  - `ui://lumen/chart/{id}` MCP-App resource serves each chart's interactive self-contained HTML
+    (for Apps-capable hosts like Claude Desktop/web); render results carry the `ui_uri`.
+  - `get_chart` re-fetches a chart by id.
+  - `save_session` / `load_session` persist the workspace (DuckDB file + chart-spec sidecar) and
+    restore it by reloading and re-rendering. 11 tools total, verified via the round-trip.
 
 ### Notes
 - Sources are loaded fully into the in-memory workspace; large on-disk sources via DuckDB `ATTACH`

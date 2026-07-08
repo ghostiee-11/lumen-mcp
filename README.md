@@ -24,13 +24,21 @@ Each SQL result is materialized as a real table (via Lumen's
 `DuckDBSource.create_sql_expr_source(materialize=True)`), so results accrete in one connection and
 you reference them by **table name**. Charts and reports bind to those tables.
 
-## Keyless tools (Phase 0)
+## Keyless tools
 
 - `connect_source(uri, name?)` - connect a `.db`/`.duckdb`, `.csv`, `.parquet`, `.json`, or `:memory:`.
 - `list_tables()` / `describe_table(table)` - schema + a small sample.
 - `run_sql(sql, name?)` - execute; the result becomes table `name`; returns columns + sample.
-- `render_vegalite(spec, table)` - normalize the spec, render, save PNG + self-contained HTML.
-- (next) `refine_chart`, `build_report`.
+- `render_vegalite(spec, table)` - normalize the spec, render; returns an inline PNG plus saved
+  PNG/HTML paths and a `ui_uri`.
+- `refine_chart(chart_id, spec_patch)` - deep-merge a patch and re-render under the same id.
+- `get_chart(chart_id)` / `list_charts()` - fetch or list rendered charts.
+- `build_report(items, title, formats?)` - assemble charts + markdown into a self-contained HTML and
+  a reproducible `.ipynb`.
+- `save_session(path)` / `load_session(path)` - persist and restore the workspace and its charts.
+
+Charts are also served as `ui://lumen/chart/{id}` MCP-App resources (interactive HTML) for
+Apps-capable hosts (Claude Desktop/web).
 
 ## Quick start
 
