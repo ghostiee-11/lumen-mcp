@@ -1,4 +1,4 @@
-"""Visualization tools: render a host-authored Vega-Lite spec against a workspace table.
+"""Visualization tools: render and iteratively refine host-authored Vega-Lite charts.
 
 Flow (all reuse, no LLM): normalize the spec (adds ``$schema`` etc.) -> bind the table via a Lumen
 ``Pipeline`` -> ``VegaLiteView`` -> PNG + self-contained HTML.
@@ -14,6 +14,17 @@ from lumen.views import VegaLiteView
 from . import rendering
 from ._shims import normalize_spec
 from .session import session
+
+
+def _deep_merge(base: dict, patch: dict) -> dict:
+    """Recursively merge ``patch`` into ``base``; patch wins on scalars and list replacement."""
+    merged = dict(base)
+    for key, value in patch.items():
+        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = _deep_merge(merged[key], value)
+        else:
+            merged[key] = value
+    return merged
 
 
 def render_vegalite(spec: dict, table: str, chart_id: Optional[str] = None) -> dict:
@@ -38,4 +49,25 @@ def render_vegalite(spec: dict, table: str, chart_id: Optional[str] = None) -> d
         "spec": normalized,
         "png_path": rendering.save_png(view, cid),
         "html_path": rendering.save_html(view, cid),
+    }
+
+
+def refine_chart(chart_id: str, spec_patch: dict) -> dict:
+    """Deep-merge ``spec_patch`` into an existing chart's spec and re-render under the same id.
+
+    Use this to iterate (add a color encoding, a title, a sort, a tooltip) without restating the
+    whole spec.
+    """
+    if chart_id not in session.charts:
+        raise KeyError(f"Unknown chart_id {chart_id!r}. Render a chart first, or see list_charts.")
+    entry = session.charts[chart_id]
+    return render_vegalite(_deep_merge(entry["spec"], spec_patch), entry["table"], chart_id=chart_id)
+
+
+def list_charts() -> dict:
+    """List rendered charts (id and the table each is bound to)."""
+    return {
+        "charts": [
+            {"chart_id": cid, "table": entry["table"]} for cid, entry in session.charts.items()
+        ]
     }

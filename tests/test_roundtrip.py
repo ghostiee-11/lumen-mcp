@@ -22,7 +22,10 @@ from fastmcp import Client  # noqa: E402
 
 from lumen_mcp.server import mcp  # noqa: E402
 
-_EXPECTED_TOOLS = {"connect_source", "list_tables", "describe_table", "run_sql", "render_vegalite"}
+_EXPECTED_TOOLS = {
+    "connect_source", "list_tables", "describe_table", "run_sql",
+    "render_vegalite", "refine_chart", "list_charts", "build_report",
+}
 
 
 def _data(result):
@@ -65,6 +68,13 @@ async def _run() -> None:
         chart = _data(await client.call_tool("render_vegalite", {"spec": spec, "table": "by_region"}))
         assert chart["html_path"] and os.path.exists(chart["html_path"]), chart
         print("render_vegalite:", {key: chart[key] for key in ("chart_id", "png_path", "html_path")})
+
+        rep = _data(await client.call_tool(
+            "build_report",
+            {"items": [{"markdown": "# Sales"}, {"chart": chart["chart_id"]}], "title": "Sales"},
+        ))
+        assert os.path.exists(rep["html_path"]) and os.path.exists(rep["ipynb_path"]), rep
+        print("build_report:", {key: rep.get(key) for key in ("html_path", "ipynb_path")})
 
     print("ROUND-TRIP PASS")
 

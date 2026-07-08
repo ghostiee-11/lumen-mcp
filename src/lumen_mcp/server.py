@@ -10,7 +10,7 @@ import functools
 
 from fastmcp import FastMCP
 
-from . import sources, viz
+from . import report, sources, viz
 
 mcp = FastMCP(
     "lumen-mcp",
@@ -45,6 +45,9 @@ _TOOLS = [
     sources.describe_table,
     sources.run_sql,
     viz.render_vegalite,
+    viz.refine_chart,
+    viz.list_charts,
+    report.build_report,
 ]
 
 for _fn in _TOOLS:
