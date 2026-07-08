@@ -36,9 +36,18 @@ you reference them by **table name**. Charts and reports bind to those tables.
 - `build_report(items, title, formats?)` - assemble charts + markdown into a self-contained HTML and
   a reproducible `.ipynb`.
 - `save_session(path)` / `load_session(path)` - persist and restore the workspace and its charts.
+- `launch_dashboard()` / `stop_dashboard()` - serve the session's charts + tables as a live,
+  interactive Lumen dashboard (a background `panel serve` process) at a localhost URL.
 
 Charts are also served as `ui://lumen/chart/{id}` MCP-App resources (interactive HTML) for
 Apps-capable hosts (Claude Desktop/web).
+
+## Live dashboard
+
+`launch_dashboard()` runs a Panel server (inside lumen-mcp, reusing the panel-live-server pattern)
+that reconstructs the session's charts and tables into a live, interactive dashboard and returns a
+`http://localhost:PORT/...` URL. Unlike the static HTML export, its widgets and tables re-query the
+DuckDB workspace live. `stop_dashboard()` shuts it down. Requires a local browser (localhost).
 
 ## Quick start
 

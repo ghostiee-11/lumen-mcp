@@ -38,7 +38,12 @@ All notable changes to lumen-mcp are documented here. Format loosely based on Ke
     (for Apps-capable hosts like Claude Desktop/web); render results carry the `ui_uri`.
   - `get_chart` re-fetches a chart by id.
   - `save_session` / `load_session` persist the workspace (DuckDB file + chart-spec sidecar) and
-    restore it by reloading and re-rendering. 11 tools total, verified via the round-trip.
+    restore it by reloading and re-rendering.
+- Live dashboard server (self-contained, no second MCP):
+  - `launch_dashboard` / `stop_dashboard` run a background `panel serve` process (the
+    panel-live-server subprocess pattern, embedded here) that serves the session's charts
+    (interactive Vega) and workspace tables (sortable Tabulator) as a live Lumen dashboard at a
+    localhost URL, with direct DuckDB-workspace access. Verified end-to-end. 13 tools total.
 
 ### Notes
 - Sources are loaded fully into the in-memory workspace; large on-disk sources via DuckDB `ATTACH`
