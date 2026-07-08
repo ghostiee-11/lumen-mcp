@@ -37,7 +37,9 @@ def _build() -> pn.viewable.Viewable:
         with open(charts_path) as fh:
             charts = json.load(fh)
         for cid, meta in charts.items():
-            view = VegaLiteView(pipeline=Pipeline(source=source, table=meta["table"]), spec=meta["spec"])
+            # Give charts concrete dimensions; "container" sizing collapses to 0px in a Column.
+            spec = dict(meta["spec"], width=700, height=350)
+            view = VegaLiteView(pipeline=Pipeline(source=source, table=meta["table"]), spec=spec)
             items.append(pn.pane.Markdown(f"### chart `{cid}`  (table `{meta['table']}`)"))
             items.append(view.get_panel())
 
